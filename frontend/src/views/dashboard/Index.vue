@@ -80,29 +80,47 @@ const ai = aiCompareData
 <style lang="scss" scoped>
 .dashboard {
   min-width: 1280px;
+  height: calc(100vh - 92px);
+  min-height: 720px;
+  display: flex;
+  flex-direction: column;
 }
 .grid {
   display: grid;
-  grid-template-columns: 150px repeat(4, minmax(180px, 1fr)) minmax(360px, 1.3fr);
+  grid-template-columns: 150px repeat(4, minmax(180px, 1fr)) minmax(420px, 1.4fr);
   gap: 12px;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
 }
 .col-kpi {
   grid-column: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  :deep(.kpi-card) {
+    flex: 1;
+    min-height: 0;
+  }
 }
 .col-channels {
   grid-column: 2 / 6;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+  :deep(.channel-card) {
+    height: 100%;
+  }
 }
 .col-ai {
   grid-column: 6;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  > :nth-child(1) { flex: 1.2; min-height: 0; }
+  > :nth-child(2) { flex: 0.9; }
+  > :nth-child(3) { flex: 0.7; }
 }
 
 .card-block {

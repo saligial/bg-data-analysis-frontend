@@ -169,9 +169,14 @@ const mixOption = computed(() => ({
   text-align: center;
   padding: 10px 0;
   letter-spacing: 1px;
+  flex-shrink: 0;
 }
 .c-body {
   padding: 12px 14px 14px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .kv {
   display: flex;
@@ -248,8 +253,14 @@ const mixOption = computed(() => ({
 }
 .donut {
   margin: 6px 0;
+  flex: 1 1 auto;
+  min-height: 140px;
+  :deep(> div) { height: 100% !important; }
 }
 .mix {
   margin-top: 8px;
+  flex: 1 1 auto;
+  min-height: 130px;
+  :deep(> div) { height: 100% !important; }
 }
 </style>
