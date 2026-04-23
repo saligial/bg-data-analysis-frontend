@@ -373,18 +373,23 @@ onMounted(async () => {
   font-weight: 600;
 }
 .total {
-  margin-left: auto;
+  margin: 0 auto;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
   .total-label {
     color: #909399;
     font-size: 12px;
+    line-height: 1;
   }
   .total-value {
     color: #1e6ecf;
     font-size: 20px;
     font-weight: 800;
+    line-height: 1.2;
     .unit {
       font-size: 12px;
       margin-left: 2px;

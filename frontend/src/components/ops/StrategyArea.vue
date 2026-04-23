@@ -6,6 +6,7 @@
     </div>
 
     <!-- 策略内容详细配置 -->
+   <el-card>
     <div class="block strategy-config-block">
       <div class="block-title">策略内容详细配置</div>
       <div class="strategy-config-grid">
@@ -62,7 +63,7 @@
         </div>
       </div>
     </div>
-
+</el-card>
     <!-- 执行渠道与话术 -->
     <div class="block">
       <div class="block-title">执行渠道与话术</div>
@@ -464,6 +465,7 @@ async function handlePublish() {
 }
 .block {
   margin-bottom: 20px;
+  margin-top :20px;
   padding-bottom: 20px;
   border-bottom: 1px dashed #ebeef5;
   &:last-of-type {
