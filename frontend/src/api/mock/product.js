@@ -81,13 +81,18 @@ export const mockProduct = {
     const seed = (text || '').length
     return pick4(seed)
   },
-  search({ keyword } = {}) {
+  // 对齐接口文档 3.3：关键词 <2 字符返回空列表，否则按名称/描述/类别模糊匹配，最多 limit 条
+  search({ keyword, limit = 20 } = {}) {
     const kw = (keyword || '').trim()
-    if (!kw) return pick4(0)
-    const matched = BASE_PRODUCTS.filter(
-      (p) => p.name.includes(kw) || p.desc.includes(kw) || p.category.includes(kw)
+    if (!kw) return [...BASE_PRODUCTS]
+    if (kw.length < 2) return []
+    const kwLower = kw.toLowerCase()
+    const matched = BASE_PRODUCTS.filter((p) =>
+      [p.name, p.desc, p.category, p.scope]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(kwLower))
     )
-    return (matched.length ? matched : pick4(kw.length)).slice(0, 4)
+    return matched.slice(0, limit)
   },
   recommendBySegment({ segment } = {}) {
     const seed = (segment?.name || '').length + 3

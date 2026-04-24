@@ -348,6 +348,7 @@ onMounted(async () => {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 .sec-head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -373,7 +374,9 @@ onMounted(async () => {
   font-weight: 600;
 }
 .total {
-  margin: 0 auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;

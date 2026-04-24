@@ -1,9 +1,9 @@
 <template>
   <div
     class="layout"
-    v-loading.fullscreen.lock="global.loading"
-    :element-loading-text="global.loadingText"
   >
+  <!--     v-loading.fullscreen.lock="global.loading"
+    :element-loading-text="global.loadingText"  loading图-->
     <TopBar />
     <div class="page-wrap">
       <router-view v-slot="{ Component }">

@@ -40,7 +40,7 @@
 
     <div class="cards" v-if="products.length">
       <div
-        v-for="(p, idx) in products"
+        v-for="(p, idx) in pagedProducts"
         :key="p.id"
         class="p-card"
         :class="[{ selected: isSelected(p) }, 'theme-' + (idx % 4)]"
@@ -72,11 +72,22 @@
       </div>
     </div>
     <div v-else class="empty">暂无产品，请在上方搜索或让小助手推荐</div>
+
+    <div class="pager" v-if="products.length > pageSize">
+      <el-pagination
+        background
+        layout="prev, pager, next, jumper, total"
+        :total="products.length"
+        :page-size="pageSize"
+        :current-page="currentPage"
+        @current-change="handlePageChange"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { searchProducts, recommendBySegment } from '@/api/product'
 
@@ -93,6 +104,25 @@ const emit = defineEmits(['update:modelValue', 'update:products'])
 const keyword = ref('')
 const searchLoading = ref(false)
 const recommendLoading = ref(false)
+
+const pageSize = 8
+const currentPage = ref(1)
+
+const pagedProducts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return props.products.slice(start, start + pageSize)
+})
+
+watch(
+  () => props.products,
+  () => {
+    currentPage.value = 1
+  }
+)
+
+function handlePageChange(page) {
+  currentPage.value = page
+}
 
 const selected = computed(() => props.modelValue)
 
@@ -362,5 +392,10 @@ async function handleRecommendBySegment() {
   padding: 30px 0;
   background: #f5f7fa;
   border-radius: 8px;
+}
+.pager {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
 }
 </style>

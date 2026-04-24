@@ -71,6 +71,22 @@ function readFileAsBase64(file) {
   })
 }
 
+// 后端 /audience/import 要求传 file_type（xlsx / csv / txt）
+// 优先从文件扩展名推断，无扩展名时回退到 MIME 类型
+function detectFileType(file) {
+  const name = (file && file.name) || ''
+  const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : ''
+  if (ext === 'xlsx' || ext === 'xls') return 'xlsx'
+  if (ext === 'csv') return 'csv'
+  if (ext === 'txt') return 'txt'
+
+  const mime = (file && file.type) || ''
+  if (mime.includes('sheet') || mime.includes('excel')) return 'xlsx'
+  if (mime.includes('csv')) return 'csv'
+  if (mime.includes('text/plain')) return 'txt'
+  return 'csv'
+}
+
 export const uploadUsers = createApi(
   async (formData) => {
     let file = null
@@ -81,7 +97,11 @@ export const uploadUsers = createApi(
     }
     if (!file) throw new Error('文件不能为空')
     const base64 = await readFileAsBase64(file)
-    const data = await request.post('/audience/import', { file_content: base64 })
+    const fileType = detectFileType(file)
+    const data = await request.post('/audience/import', {
+      file_content: base64,
+      file_type: fileType
+    })
     return {
       count: data.total ?? (data.audience_ids || []).length,
       audienceIds: data.audience_ids || []

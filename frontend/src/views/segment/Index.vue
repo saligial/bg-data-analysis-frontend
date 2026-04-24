@@ -41,7 +41,6 @@
         <!-- 结果表格 -->
         <div class="result-card">
           <el-table
-            v-loading="queryLoading"
             :data="pagedRows"
             stripe
             border
@@ -72,7 +71,9 @@
           </div>
 
           <div class="result-actions">
-            <button class="blue-btn" @click="handleSaveSegment">保存客群</button>
+            <button class="blue-btn" :disabled="saveLoading" @click="handleSaveSegment">
+              {{ saveLoading ? '保存中...' : '保存客群' }}
+            </button>
             <button class="orange-btn" :disabled="analysisLoading" @click="handleMultiAnalysis">
               {{ analysisLoading ? '分析中...' : '多维分析' }}
             </button>
@@ -165,6 +166,7 @@ const sqlText = ref('SELECT city_id, sex_id, count(*) AS cnt FROM user_behavior 
 const askLoading = ref(false)
 const queryLoading = ref(false)
 const analysisLoading = ref(false)
+const saveLoading = ref(false)
 
 const tableColumns = ref([])
 const allRows = ref([])
@@ -288,6 +290,7 @@ async function handleQuery() {
     return
   }
   queryLoading.value = true
+
   try {
     const res = await queryBySql({ sql: sqlText.value })
     tableColumns.value = res.columns
@@ -301,20 +304,28 @@ async function handleQuery() {
 }
 
 async function handleSaveSegment() {
+  let name
   try {
-    const { value: name } = await ElMessageBox.prompt('请输入客群名称', '保存客群', {
+    const result = await ElMessageBox.prompt('请输入客群名称', '保存客群', {
       confirmButtonText: '保存',
       cancelButtonText: '取消',
       inputPattern: /.+/,
       inputErrorMessage: '客群名称不能为空'
     })
+    name = result.value
+  } catch (e) {
+    if (e !== 'cancel') console.warn(e)
+    return
+  }
+  saveLoading.value = true
+  try {
     // 后端 /audience/save 接收完整 SQL（condition_sql），
     // 若为聚合 SQL，后端会自动改写为 SELECT user_id FROM ... WHERE ...
     const res = await saveSegment({ name, condition: sqlText.value })
     store.addSegment({ name, condition: sqlText.value, id: res.id })
     ElMessage.success('客群已保存：' + res.id)
-  } catch (e) {
-    if (e !== 'cancel') console.warn(e)
+  } finally {
+    saveLoading.value = false
   }
 }
 

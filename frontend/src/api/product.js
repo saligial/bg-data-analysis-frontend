@@ -41,7 +41,6 @@ export const recommendBySegment = createApi(
 )
 
 // 10.2 产品列表 GET /products -> { products: [] }
-//   前端"搜索"在列表上做本地 keyword 过滤
 let _productCache = null
 async function loadProducts() {
   if (_productCache) return _productCache
@@ -50,14 +49,26 @@ async function loadProducts() {
   return _productCache
 }
 
+// 3.3 前端搜索推荐产品 POST /products/search
+//   参数：keyword（关键词，至少 2 个字符，少于 2 字符返回空列表）
+//         limit（最大返回条数，默认 20）
+//   响应：{ products: [...] }
+//
+// 为了兼容初始化调用 searchProducts({ keyword: '' })，约定：
+//   - keyword 为空：走 GET /products 返回全量产品列表
+//   - keyword 有内容但长度 < 2：直接返回空数组（符合后端约束，避免无效请求）
+//   - keyword 长度 >= 2：走 POST /products/search 真正搜索
 export const searchProducts = createApi(
-  async ({ keyword } = {}) => {
-    const all = await loadProducts()
-    const kw = (keyword || '').trim().toLowerCase()
-    if (!kw) return all
-    return all.filter((p) =>
-      [p.name, p.category, p.desc, p.scope].filter(Boolean).some((v) => String(v).toLowerCase().includes(kw))
-    )
+  async ({ keyword, limit = 20 } = {}) => {
+    const kw = (keyword || '').trim()
+    if (!kw) {
+      return await loadProducts()
+    }
+    if (kw.length < 2) {
+      return []
+    }
+    const data = await request.post('/products/search', { keyword: kw, limit })
+    return (data.products || []).map(mapProduct)
   },
   (payload) => mockProduct.search(payload)
 )

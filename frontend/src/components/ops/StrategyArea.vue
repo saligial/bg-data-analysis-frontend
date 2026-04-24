@@ -6,69 +6,78 @@
     </div>
 
     <!-- 策略内容详细配置 -->
-   <el-card>
-    <div class="block strategy-config-block">
-      <div class="block-title">策略内容详细配置</div>
-      <div class="strategy-config-grid">
-        <div class="config-left">
-          <div class="field-label">策略名称</div>
-          <el-input v-model="strategy.name" placeholder="（自动生成后可修改）" />
+    <div class="sc-card">
+      <div class="sc-card-head">
+        <span class="sc-head-icon">📋</span>
+        <span class="sc-head-title">策略内容详细配置</span>
+        <span class="sc-head-badge">符合业态合规</span>
+      </div>
+      <div class="sc-card-body">
+        <div class="strategy-config-grid">
+          <div class="config-left">
+            <div class="field-label">策略名称</div>
+            <el-input v-model="strategy.name" placeholder="（自动生成后可修改）" />
 
-          <div class="field-label mt-12">策略类别</div>
-          <el-select v-model="categoryValue" placeholder="请选择策略类别" style="width: 100%">
-            <el-option label="挽留" value="挽留" />
-            <el-option label="升级" value="升级" />
-            <el-option label="交叉销售" value="交叉销售" />
-            <el-option label="新客拉新" value="新客拉新" />
-          </el-select>
+            <div class="field-label mt-12">策略类别</div>
+            <el-select v-model="categoryValue" placeholder="请选择策略类别" style="width: 100%">
+              <el-option label="挽留" value="挽留" />
+              <el-option label="升级" value="升级" />
+              <el-option label="交叉销售" value="交叉销售" />
+              <el-option label="新客拉新" value="新客拉新" />
+            </el-select>
 
-          <div class="field-label mt-12">适用条件说明</div>
-          <el-input
-            v-model="strategy.condition"
-            type="textarea"
-            :rows="5"
-            placeholder="若无圈选客群此处为空"
-          />
-        </div>
-
-        <div class="config-right">
-          <div class="right-card-title">策略详细版（活动策略）</div>
-          <div class="detail-card">
-            <div class="detail-line">
-              <span class="detail-label">策略描述:</span>
-              <span class="detail-value">{{ strategy.descDetail.desc || '--' }}</span>
-            </div>
-            <div class="detail-line">
-              <span class="detail-label">扣费比例:</span>
-              <span class="detail-value">{{ strategy.descDetail.paymentMethod || '--' }}</span>
-            </div>
-            <div class="detail-line">
-              <span class="detail-label">关联产品:</span>
-              <span class="detail-value">{{ strategy.descDetail.relatedProducts || '--' }}</span>
-            </div>
-            <div class="detail-line">
-              <span class="detail-label">权益内容:</span>
-              <span class="detail-value">{{ strategy.descDetail.benefits || '--' }}</span>
-            </div>
-            <div class="detail-line detail-line-arpu">
-              <span class="detail-label">预计 ARPU提升值:</span>
-              <span class="detail-value detail-arpu">{{ strategy.expectedArpuLift || '--' }}</span>
-            </div>
+            <div class="field-label mt-12">适用条件说明</div>
+            <el-input
+              v-model="strategy.condition"
+              type="textarea"
+              :rows="5"
+              placeholder="若无圈选客群此处为空"
+            />
           </div>
-          <div class="field-label mt-12">客群规模确认</div>
-          <div class="metric-box dark-bg">
-            <span class="metric-label">有效库内人数</span>
-            <span class="metric-num">{{ (strategy.segmentSize || 0).toLocaleString() }}</span>
+
+          <div class="config-right">
+            <div class="right-card-title">策略详细版（活动策略）</div>
+            <div class="detail-card">
+              <div class="detail-line">
+                <span class="detail-label">策略描述:</span>
+                <span class="detail-value">{{ strategy.descDetail.desc || '--' }}</span>
+              </div>
+              <div class="detail-line">
+                <span class="detail-label">扣费比例:</span>
+                <span class="detail-value">{{ strategy.descDetail.paymentMethod || '--' }}</span>
+              </div>
+              <div class="detail-line">
+                <span class="detail-label">关联产品:</span>
+                <span class="detail-value">{{ strategy.descDetail.relatedProducts || '--' }}</span>
+              </div>
+              <div class="detail-line">
+                <span class="detail-label">权益内容:</span>
+                <span class="detail-value">{{ strategy.descDetail.benefits || '--' }}</span>
+              </div>
+              <div class="detail-line detail-line-arpu">
+                <span class="detail-label">预计 ARPU提升值:</span>
+                <span class="detail-value detail-arpu">{{ strategy.expectedArpuLift || '--' }}</span>
+              </div>
+            </div>
+            <div class="field-label mt-12">客群规模确认</div>
+            <div class="metric-box dark-bg">
+              <span class="metric-label">有效库内人数</span>
+              <span class="metric-num">{{ (strategy.segmentSize || 0).toLocaleString() }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-</el-card>
-    <!-- 执行渠道与话术 -->
-    <div class="block">
-      <div class="block-title">执行渠道与话术</div>
-      <div class="exec-grid">
-        <div class="exec-left">
+
+    <!-- 执行渠道与话术 + 营销调度设置 -->
+    <div class="sc-dual-grid">
+      <!-- 左卡：执行渠道与话术 -->
+      <div class="sc-card">
+        <div class="sc-card-head">
+          <span class="sc-head-icon">💬</span>
+          <span class="sc-head-title">执行渠道与话术</span>
+        </div>
+        <div class="sc-card-body">
           <div class="sub-title">推荐渠道</div>
           <div class="channel-cards">
             <div
@@ -104,12 +113,15 @@
             <div v-if="!currentScripts.length" class="empty">请先选择推荐渠道</div>
           </div>
         </div>
+      </div>
 
-        <div class="exec-right">
-          <div class="exec-right-title">
-            <span class="dot">◆</span>
-            <span>营销调度设置</span>
-          </div>
+      <!-- 右卡：营销调度设置 -->
+      <div class="sc-card">
+        <div class="sc-card-head">
+          <span class="sc-head-icon">⏰</span>
+          <span class="sc-head-title">营销调度设置</span>
+        </div>
+        <div class="sc-card-body">
           <div class="freq-head">
             <div class="field-label">{{ frequencyLabel }}</div>
             <div class="freq-value">{{ frequencyValueText }}</div>
@@ -463,50 +475,55 @@ async function handlePublish() {
   padding-bottom: 10px;
   border-bottom: 1px solid #f0f2f5;
 }
-.block {
-  margin-bottom: 20px;
-  margin-top :20px;
-  padding-bottom: 20px;
-  border-bottom: 1px dashed #ebeef5;
-  &:last-of-type {
-    border-bottom: none;
-  }
+.sc-card {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(23, 43, 77, 0.08);
+  border: 1px solid #e8edf5;
+  margin-bottom: 16px;
 }
-.block-title {
-  font-size: 15px;
+.sc-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg,#f8fafc 0%, #f8fafc 100%);
+  border-bottom: 1px solid #e3ecf9;
+}
+.sc-head-icon {
+  font-size: 14px;
+}
+.sc-head-title {
+  font-size: 14px;
   font-weight: 700;
-  color: #303133;
-  margin-bottom: 12px;
+  color: #1f2937;
+}
+.sc-head-badge {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e7f7ec;
+  color: #2aaf5e;
+  border: 1px solid #bfe9cc;
+}
+.sc-card-body {
+  padding: 16px 18px;
+}
+.sc-dual-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
 }
 .sub-title {
   font-size: 13px;
   font-weight: 700;
   color: #606266;
   margin: 12px 0 6px;
-}
-.exec-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr);
-  gap: 14px;
-}
-.exec-left,
-.exec-right {
-  background: #f8fafc;
-  border: 1px solid #e8edf5;
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-.exec-right-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #303133;
-  margin-bottom: 12px;
-  .dot {
-    color: #6aa3ff;
-    font-size: 12px;
+  &:first-child {
+    margin-top: 0;
   }
 }
 .field-label {
