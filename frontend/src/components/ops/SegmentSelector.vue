@@ -37,7 +37,7 @@
         >
           <el-option v-for="s in savedSegments" :key="s.id" :label="s.name" :value="s.name" />
         </el-select>
-      
+
         <div class="mc-count">圈选用户数：<strong>{{ condition.count.toLocaleString() }}</strong> 人</div>
         <div class="mc-actions">
           <button class="btn-ghost" @click="cancelMethod('condition')">取消圈选</button>
@@ -56,10 +56,12 @@
           <div class="mc-title">种子用户扩散方式</div>
         </div>
         <div class="mc-target-row">
-          <div class="mc-sub mc-sub-strong">目标客群量</div>
+          <div class="mc-sub mc-sub-strong">
+            <span class="req-star" title="必填">*</span>目标客群量
+          </div>
           <el-input
             v-model="seed.target"
-            placeholder="目标用户数"
+            placeholder="请输入正整数，必填"
             style="width: 100%"
             size="default"
           />
@@ -86,10 +88,12 @@
           <div class="mc-title">产品推荐客群方式</div>
         </div>
         <div class="mc-target-row">
-          <div class="mc-sub mc-sub-strong">目标客群量</div>
+          <div class="mc-sub mc-sub-strong">
+            <span class="req-star" title="必填">*</span>目标客群量
+          </div>
           <el-input
             v-model="productSeg.target"
-            placeholder="目标客群量"
+            placeholder="请输入正整数，必填"
             style="width: 100%"
             size="default"
           />
@@ -246,6 +250,10 @@ function confirmMethod(key) {
       ElMessage.warning('请先点击 开始计算')
       return
     }
+    if (parseTargetCountRequired(seed.target) == null) {
+      ElMessage.warning('请填写目标客群量（正整数）')
+      return
+    }
     seed.confirmed = true
     emitChange()
     ElMessage.success('已加入待运营客群')
@@ -291,12 +299,14 @@ async function runCondition() {
   }
 }
 
-/** 与 api/strategy.js 中 target_count: target || 1000 对齐；空输入不再误用 100000 */
-const DEFAULT_SEED_TARGET = 1000
-
-function parseTargetCount(raw, fallback = DEFAULT_SEED_TARGET) {
-  const n = Number(String(raw ?? '').replace(/,/g, '').trim())
-  if (!Number.isFinite(n) || n < 1) return fallback
+/** 必填项：无有效输入时返回 null；否则为 1～5000 万 的正整数 */
+function parseTargetCountRequired(raw) {
+  const s = String(raw ?? '')
+    .replace(/,/g, '')
+    .trim()
+  if (s === '') return null
+  const n = Number(s)
+  if (!Number.isFinite(n) || n < 1) return null
   return Math.min(Math.floor(n), 50_000_000)
 }
 
@@ -305,9 +315,13 @@ async function runSeedCompute() {
     ElMessage.warning('请输入种子 user_id / 电话号')
     return
   }
+  const target = parseTargetCountRequired(seed.target)
+  if (target == null) {
+    ElMessage.warning('请填写目标客群量（正整数）')
+    return
+  }
   seed.compLoading = true
   try {
-    const target = parseTargetCount(seed.target, DEFAULT_SEED_TARGET)
     const res = await seedExpand({ seeds: seed.seeds, target })
     seed.count = res.count
     seed.audienceIds = res.audienceIds || []
@@ -322,11 +336,16 @@ async function runProductSeg() {
     ElMessage.warning('请先在产品库选择产品')
     return
   }
+  const target = parseTargetCountRequired(productSeg.target)
+  if (target == null) {
+    ElMessage.warning('请填写目标客群量（正整数）')
+    return
+  }
   productSeg.loading = true
   try {
     const res = await segmentByProduct({
       productIds: props.selectedProducts.map((p) => p.id),
-      target: parseTargetCount(productSeg.target, DEFAULT_SEED_TARGET)
+      target
     })
     productSeg.count = res.count
     productSeg.audienceIds = res.audienceIds || []
@@ -498,6 +517,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.req-star {
+  color: #f56c6c;
+  margin-right: 2px;
+  font-weight: 700;
 }
 .mc-sub-small {
   font-size: 11px;
