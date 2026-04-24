@@ -85,16 +85,16 @@
           </div>
           <div class="mc-title">产品推荐客群方式</div>
         </div>
-        <div class="mc-sub">目标客群量</div>
-    <div class="mc-target-row">
+        <div class="mc-target-row">
           <div class="mc-sub mc-sub-strong">目标客群量</div>
           <el-input
-            v-model="seed.target"
-            placeholder="目标用户数"
+            v-model="productSeg.target"
+            placeholder="目标客群量"
             style="width: 100%"
             size="default"
           />
-        </div>        <div class="mc-ring">
+        </div>
+        <div class="mc-ring">
           <svg viewBox="0 0 80 80" width="80" height="80">
             <circle cx="40" cy="40" r="30" stroke="#d8e4f3" stroke-width="6" fill="none" />
             <circle cx="40" cy="40" r="30" stroke="#1e6ecf" stroke-width="6" fill="none"
@@ -151,9 +151,9 @@
 import { reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import CountNumber from '@/components/CountNumber.vue'
-import { segmentByCondition, seedExpand, segmentByProduct, uploadUsers } from '@/api/strategy'
+import { seedExpand, segmentByProduct, uploadUsers } from '@/api/strategy'
 import { useSegmentStore } from '@/stores/segment'
-import { getSegmentList } from '@/api/segment'
+import { getSegmentList, queryBySql } from '@/api/segment'
 
 const props = defineProps({
   selectedProducts: { type: Array, default: () => [] },
@@ -230,6 +230,7 @@ function cancelMethod(key) {
     productSeg.count = 0
     productSeg.audienceIds = []
     productSeg.confirmed = false
+    productSeg.target = ''
   } else if (key === 'upload') {
     upload.count = 0
     upload.audienceIds = []
@@ -251,22 +252,52 @@ function confirmMethod(key) {
   }
 }
 
+// 将保存的客群 SQL（可能是 SELECT city_id, count(*) FROM user_behavior WHERE ... GROUP BY ... LIMIT ...）
+// 改写成 SELECT user_id FROM user_behavior WHERE ...，用于圈选真实用户清单
+function buildUserListSql(savedSql) {
+  if (!savedSql) return 'SELECT user_id FROM user_behavior LIMIT 1000'
+  const s = String(savedSql).replace(/;+\s*$/, '').trim()
+  // 截取 FROM ... 到 GROUP BY / ORDER BY / LIMIT 之前
+  const m = s.match(/from\s+user_behavior[\s\S]*?(?=(\bgroup\s+by\b|\border\s+by\b|\blimit\b|$))/i)
+  const fromWhere = m ? m[0].trim() : 'FROM user_behavior'
+  return `SELECT user_id ${fromWhere}`.trim()
+}
+
 async function runCondition() {
   if (!condition.segmentName) {
     ElMessage.warning('请先选择客群')
     return
   }
+  const saved = savedSegments.value.find((s) => s.name === condition.segmentName)
+  if (!saved || !saved.condition) {
+    ElMessage.warning('该客群缺少保存的查询条件，请先在"客群分析"中保存客群后再试')
+    return
+  }
+
   condition.loading = true
   try {
-    const res = await segmentByCondition({ name: condition.segmentName })
-    condition.count = res.count
-    condition.audienceIds = res.audienceIds || []
+    const sql = buildUserListSql(saved.condition)
+    const res = await queryBySql({ sql })
+    const ids = (res.rows || [])
+      .map((r) => r && (r.user_id ?? r.USER_ID))
+      .filter((v) => v !== undefined && v !== null && v !== '')
+    condition.audienceIds = Array.from(new Set(ids.map(String)))
+    condition.count = res.total ?? condition.audienceIds.length
     condition.confirmed = true
     emitChange()
-    ElMessage.success('已加入待运营客群')
+    ElMessage.success(`已加入待运营客群，共圈选 ${condition.count} 人`)
   } finally {
     condition.loading = false
   }
+}
+
+/** 与 api/strategy.js 中 target_count: target || 1000 对齐；空输入不再误用 100000 */
+const DEFAULT_SEED_TARGET = 1000
+
+function parseTargetCount(raw, fallback = DEFAULT_SEED_TARGET) {
+  const n = Number(String(raw ?? '').replace(/,/g, '').trim())
+  if (!Number.isFinite(n) || n < 1) return fallback
+  return Math.min(Math.floor(n), 50_000_000)
 }
 
 async function runSeedCompute() {
@@ -276,7 +307,7 @@ async function runSeedCompute() {
   }
   seed.compLoading = true
   try {
-    const target = Number(seed.target) || 100000
+    const target = parseTargetCount(seed.target, DEFAULT_SEED_TARGET)
     const res = await seedExpand({ seeds: seed.seeds, target })
     seed.count = res.count
     seed.audienceIds = res.audienceIds || []
@@ -295,7 +326,7 @@ async function runProductSeg() {
   try {
     const res = await segmentByProduct({
       productIds: props.selectedProducts.map((p) => p.id),
-      target: productSeg.target
+      target: parseTargetCount(productSeg.target, DEFAULT_SEED_TARGET)
     })
     productSeg.count = res.count
     productSeg.audienceIds = res.audienceIds || []
