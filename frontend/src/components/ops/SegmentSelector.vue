@@ -32,13 +32,21 @@
           v-model="condition.segmentName"
           placeholder="口径圈选"
           clearable
+          filterable
+          :loading="audienceNamesLoading"
           size="default"
           style="width: 100%"
+          @visible-change="onConditionSelectVisible"
         >
-          <el-option v-for="s in savedSegments" :key="s.id" :label="s.name" :value="s.name" />
+          <el-option
+            v-for="n in audienceNameList"
+            :key="n"
+            :label="n"
+            :value="n"
+          />
         </el-select>
 
-        <div class="mc-count">圈选用户数：<strong>{{ condition.count.toLocaleString() }}</strong> 人</div>
+        <div class="mc-count">圈选用户数：<strong>{{ conditionCountDisplay.toLocaleString() }}</strong> 人</div>
         <div class="mc-actions">
           <button class="btn-ghost" @click="cancelMethod('condition')">取消圈选</button>
           <button class="btn-primary" :disabled="condition.loading" @click="runCondition">
@@ -152,12 +160,12 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch, onMounted } from 'vue'
+import { reactive, computed, watch, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import CountNumber from '@/components/CountNumber.vue'
 import { seedExpand, segmentByProduct, uploadUsers } from '@/api/strategy'
 import { useSegmentStore } from '@/stores/segment'
-import { getSegmentList, queryBySql } from '@/api/segment'
+import { getSegmentList, queryBySql, SQL_AUDIENCE_GROUP_NAMES } from '@/api/segment'
 
 const props = defineProps({
   selectedProducts: { type: Array, default: () => [] },
@@ -170,12 +178,22 @@ const emit = defineEmits(['change'])
 const store = useSegmentStore()
 const savedSegments = computed(() => store.savedSegments)
 
+/** 点击展开下拉时由 POST /audience/execute 拉取；data 行 -> name 列 */
+const audienceNameList = ref([])
+const audienceNamesLoading = ref(false)
+
 const condition = reactive({ segmentName: '', count: 0, audienceIds: [], loading: false, confirmed: false })
 const seed = reactive({ target: '', seeds: '', count: 0, audienceIds: [], compLoading: false, confirmed: false })
 const productSeg = reactive({ target: '', count: 0, audienceIds: [], loading: false, confirmed: false })
 const upload = reactive({ file: null, count: 0, audienceIds: [], loading: false, confirmed: false })
 
 const methodCount = computed(() => (props.showProductRecommend ? 4 : 3))
+
+/** 未确定圈选前为 0；确定后展示实际圈选人数 */
+const conditionCountDisplay = computed(() => {
+  if (condition.confirmed) return condition.count
+  return 0
+})
 
 const totalCount = computed(() => {
   let sum = 0
@@ -215,7 +233,11 @@ function emitChange() {
     parts,
     audienceIds: uniqIds,
     conditionName: condition.segmentName,
-    condition: savedSegments.value.find((s) => s.name === condition.segmentName)?.condition || ''
+    condition:
+      savedSegments.value.find((s) => s.name === condition.segmentName)?.condition ||
+      (condition.confirmed && condition.segmentName
+        ? `SELECT user_id FROM audience_groups WHERE name = '${String(condition.segmentName).replace(/'/g, "''")}'`
+        : '')
   })
 }
 
@@ -260,6 +282,40 @@ function confirmMethod(key) {
   }
 }
 
+function pickNameFromRow(r) {
+  if (!r || typeof r !== 'object') return ''
+  if (r.name != null && r.name !== '') return String(r.name)
+  if (r.NAME != null && r.NAME !== '') return String(r.NAME)
+  const v = Object.values(r)[0]
+  return v != null && v !== '' ? String(v) : ''
+}
+
+/** 拉取 audience_groups 客群名称；POST /audience/execute { sql }。下拉展开时调用 */
+async function loadAudienceGroupNameList() {
+  audienceNamesLoading.value = true
+  try {
+    const res = await queryBySql({ sql: SQL_AUDIENCE_GROUP_NAMES })
+    const rows = res.rows || []
+    const names = [...new Set(rows.map(pickNameFromRow).filter(Boolean))]
+    const extra = (store.savedSegments || [])
+      .map((s) => s.name)
+      .filter(Boolean)
+    audienceNameList.value = [...new Set([...names, ...extra])]
+  } catch (e) {
+    audienceNameList.value = (store.savedSegments || [])
+      .map((s) => s.name)
+      .filter(Boolean)
+  } finally {
+    audienceNamesLoading.value = false
+  }
+}
+
+function onConditionSelectVisible(visible) {
+  if (visible) {
+    void loadAudienceGroupNameList()
+  }
+}
+
 // 将保存的客群 SQL（可能是 SELECT city_id, count(*) FROM user_behavior WHERE ... GROUP BY ... LIMIT ...）
 // 改写成 SELECT user_id FROM user_behavior WHERE ...，用于圈选真实用户清单
 function buildUserListSql(savedSql) {
@@ -276,16 +332,25 @@ async function runCondition() {
     ElMessage.warning('请先选择客群')
     return
   }
-  const saved = savedSegments.value.find((s) => s.name === condition.segmentName)
-  if (!saved || !saved.condition) {
-    ElMessage.warning('该客群缺少保存的查询条件，请先在"客群分析"中保存客群后再试')
+  const name = condition.segmentName
+  const saved = savedSegments.value.find((s) => s.name === name)
+  const inLoadedList = audienceNameList.value.includes(name)
+  if (!saved?.condition && !inLoadedList) {
+    ElMessage.warning('该客群不在可选列表中，请重新选择或刷新页面')
     return
   }
 
   condition.loading = true
   try {
-    const sql = buildUserListSql(saved.condition)
-    const res = await queryBySql({ sql })
+    let res
+    if (saved && saved.condition) {
+      res = await queryBySql({ sql: buildUserListSql(saved.condition) })
+    } else {
+      const esc = String(name).replace(/'/g, "''")
+      res = await queryBySql({
+        sql: `SELECT user_id FROM audience_groups WHERE name = '${esc}'`
+      })
+    }
     const ids = (res.rows || [])
       .map((r) => r && (r.user_id ?? r.USER_ID))
       .filter((v) => v !== undefined && v !== null && v !== '')
@@ -381,12 +446,18 @@ async function runUpload() {
 }
 
 onMounted(async () => {
-  if (!store.savedSegments.length) {
-    try {
+  try {
+    if (!store.savedSegments.length) {
       const list = await getSegmentList()
       store.setList(list)
-    } catch (e) {}
-  }
+    }
+    const extra = (store.savedSegments || [])
+      .map((s) => s.name)
+      .filter(Boolean)
+    if (extra.length) {
+      audienceNameList.value = [...new Set([...audienceNameList.value, ...extra])]
+    }
+  } catch (e) {}
 })
 </script>
 

@@ -19,6 +19,33 @@ export const mockSegment = {
   },
 
   query({ sql } = {}) {
+    const norm = (sql || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase()
+
+    // 口径下拉拉取客群名：与真实接口 { columns, data, total } 在 queryBySql 中已转为 rows
+    if (norm.includes('from audience_groups') && norm.includes('group by name')) {
+      const names = ['测试', '高ARPU城市白领', '潜力新用户', '流失预警用户']
+      return {
+        columns: [{ prop: 'name', label: 'name' }],
+        rows: names.map((name) => ({ name })),
+        total: 11,
+        sql
+      }
+    }
+
+    // 圈选：按客群名取 user_id
+    if (/from\s+audience_groups/.test(norm) && norm.includes('user_id') && norm.includes('where') && norm.includes('name')) {
+      const n = 5
+      return {
+        columns: [{ prop: 'user_id', label: 'user_id' }],
+        rows: Array.from({ length: n }, (_, i) => ({ user_id: `U${String(100001 + i)}` })),
+        total: n,
+        sql
+      }
+    }
+
     const rows = []
     const cities = ['北京', '上海', '广州', '深圳', '成都', '武汉', '南京', '杭州', '西安', '郑州']
     const sexMap = ['未知', '男', '女']

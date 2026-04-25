@@ -16,6 +16,9 @@ export const textToSql = createApi(
   (payload) => mockSegment.textToSql(payload)
 )
 
+// 已保存客群名称列表（口径圈选下拉）：与后端约定在 ClickHouse 上执行
+export const SQL_AUDIENCE_GROUP_NAMES = 'select name from audience_groups group by name'
+
 // 1.2 执行 SQL 查询
 //   POST /audience/execute  { sql, user_id }
 //   ->  { columns: string[], data: any[][], total }
