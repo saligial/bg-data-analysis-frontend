@@ -95,7 +95,10 @@
               <div class="lc-desc">口径：{{ lc.desc }}</div>
             </div>
           </div>
-
+          <div class="vc-footer">
+            <div class="vc-footer-title">全生命周期分布</div>
+            <div class="vc-footer-sub">全生命周期内使用户价值曲线和差异性运营的直接指标</div>
+          </div>
           <!-- 高价值 / 低价值 -->
           <div class="value-card">
             <div class="vc-grid">
@@ -123,10 +126,7 @@
                 </div>
               </div>
             </div>
-            <div class="vc-footer">
-              <div class="vc-footer-title">全生命周期分布</div>
-              <div class="vc-footer-sub">全生命周期内使用户价值曲线和差异性运营的直接指标</div>
-            </div>
+
           </div>
         </div>
 
@@ -457,10 +457,17 @@ onMounted(async () => {
 
 /* 结果卡 */
 .result-card {
+  height: 460px; /* 固定整个卡片的高度，你可以自己改数值 */
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-radius: 8px;
   padding: 14px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+.result-card .el-table {
+  flex: 1; /* 自动占满剩余高度 */
+  min-height: 200px; /* 表格最小高度，防止太小 */
 }
 .table-footer {
   display: flex;
@@ -526,9 +533,9 @@ onMounted(async () => {
   .lc-value {
     text-align: center;
     padding: 9px 6px 8px;
-    font-size: 26px;
+    font-size: 16px;
     line-height: 1;
-    font-weight: 700;
+    font-weight: 500;
     color: #fff;
     background: #2f77b8;
     .lc-unit {
@@ -671,8 +678,10 @@ onMounted(async () => {
 }
 .vc-footer {
   margin-top: 16px;
+  margin-bottom: 16px;
   padding-top: 12px;
-  border-top: 1px dashed #cfddef;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #cfddef;
   .vc-footer-title {
     font-size: 18px;
     font-weight: 700;

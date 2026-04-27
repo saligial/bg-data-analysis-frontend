@@ -47,9 +47,10 @@ export const mockSegment = {
     }
 
     const rows = []
-    const cities = ['北京', '上海', '广州', '深圳', '成都', '武汉', '南京', '杭州', '西安', '郑州']
+    //const cities = ['北京', '上海', '广州', '深圳', '成都', '武汉', '南京', '杭州', '西安', '郑州']
+    const cities = ['北京']
     const sexMap = ['未知', '男', '女']
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 100; i++) {
       rows.push({
         city_id: cities[i % cities.length],
         user_online: rand(1, 120),
