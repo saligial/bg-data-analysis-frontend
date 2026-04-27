@@ -74,9 +74,9 @@
             <button class="blue-btn" :disabled="saveLoading" @click="handleSaveSegment">
               {{ saveLoading ? '保存中...' : '保存客群' }}
             </button>
-            <button class="orange-btn" :disabled="analysisLoading" @click="handleMultiAnalysis">
+<!--            <button class="orange-btn" :disabled="analysisLoading" @click="handleMultiAnalysis">
               {{ analysisLoading ? '分析中...' : '多维分析' }}
-            </button>
+            </button>-->
           </div>
         </div>
       </div>
@@ -298,6 +298,7 @@ async function handleQuery() {
     totalRows.value = res.total || res.rows.length
     currentPage.value = 1
     selectedRowIdx.value = new Set()
+    handleMultiAnalysis()
   } finally {
     queryLoading.value = false
   }
@@ -333,10 +334,13 @@ async function handleMultiAnalysis() {
   analysisLoading.value = true
   try {
     const res = await multiAnalysis({ sql: sqlText.value })
+    console.log('sqlText.value',sqlText.value)
+    console.log('sqlText.value的res----------',res)
     analysis.lifecycle = res.lifecycle
     analysis.valueBar = res.valueBar
     analysis.radar = res.radar
     analysis.diagnosisTable = res.diagnosisTable
+    console.log('雷达图右侧数据sql',sqlText.value)
     ElMessage.success('多维分析已更新右侧数据')
   } finally {
     analysisLoading.value = false
@@ -349,7 +353,7 @@ onMounted(async () => {
     store.setList(list)
   } catch (e) {}
   //handleQuery()
-  handleMultiAnalysis()
+  //handleMultiAnalysis()
 })
 </script>
 

@@ -80,10 +80,78 @@ function normalizeDiagnosisTable(rows) {
   }))
 }
 
+function buildDiagnosisTableFromExecuteResult(result) {
+  const cols = result?.columns || []
+  const rows = result?.data || []
+  if (!Array.isArray(cols) || !Array.isArray(rows) || !cols.length || !rows.length) {
+    return null
+  }
+
+  const idx = {}
+  cols.forEach((name, i) => {
+    idx[name] = i
+  })
+
+  const getVal = (row, ...keys) => {
+    const colIdx = keys.map((k) => idx[k]).find((v) => typeof v === 'number')
+    return typeof colIdx === 'number' ? Number(row[colIdx]) || 0 : 0
+  }
+
+  return rows.map((row) => ({
+    period: row[idx.smzq] || row[idx.period] || row[idx.stage] || '',
+    sticky: getVal(row, '粘性', 'sticky'),
+    value: getVal(row, '价值', 'value'),
+    compete: getVal(row, '竞抢', 'compete'),
+    sense: getVal(row, '感知', 'sense'),
+    active: getVal(row, '活跃', 'active'),
+    spread: getVal(row, '传播', 'spread')
+  }))
+}
+
+function buildRadarValueFromExecuteResult(result) {
+  const cols = result?.columns || []
+  const first = result?.data?.[0] || []
+  if (!Array.isArray(cols) || !Array.isArray(first) || !cols.length || !first.length) {
+    return []
+  }
+  const idx = {}
+  cols.forEach((name, i) => {
+    idx[String(name).trim()] = i
+  })
+  const getVal = (...keys) => {
+    const colIdx = keys
+      .map((k) => idx[String(k).trim()])
+      .find((v) => typeof v === 'number')
+    return typeof colIdx === 'number' ? Number(first[colIdx]) || 0 : null
+  }
+  let values = [
+    getVal('粘性', 'sticky'),
+    getVal('价值', 'value'),
+    getVal('竞抢', 'compete'),
+    getVal('感知', 'sense'),
+    getVal('活跃', 'active'),
+    getVal('传播', 'spread')
+  ]
+
+  // 列名兜底失败时，按返回顺序取前 6 个值（对应指标顺序）
+  if (values.some((v) => v === null)) {
+    values = first.slice(0, 6).map((v) => Number(v) || 0)
+  }
+
+  // 当前雷达图指标 max=100；后端若返回 0~1 比例，这里自动转为百分制
+  const shouldScaleToPercent = values.length && values.every((v) => typeof v === 'number' && v <= 1)
+  if (shouldScaleToPercent) {
+    values = values.map((v) => +(v * 100).toFixed(2))
+  }
+
+  return values
+}
+
 export const multiAnalysis = createApi(
   async ({ sql } = {}) => {
     const fromWhere = extractFromWhere(sql)
 
+      console.log('fromWhere----------',fromWhere)
     // 1) 生命周期卡片
     const sqlLifecycle = `SELECT
       countIf(user_online < 6) AS s1,
@@ -107,20 +175,43 @@ export const multiAnalysis = createApi(
       ${fromWhere}
       GROUP BY stage`
 
-    // 3) 雷达 6 维
+    // 3) 雷达右侧表格（按生命周期分组）
     const sqlRadar = `SELECT
-      sum(is_rhtc) AS 粘性,
-      avg(arpu) AS 价值,
-      sum(is_ywsk) AS 竞抢,
-      sum(is_ts) AS 感知,
-      sum(active_mark) AS 活跃,
-      avg(call_opp_counts1) AS 传播
-      ${fromWhere}`
+      CASE WHEN user_online <= 6 THEN '入网期' WHEN user_online <= 18 AND user_online > 6 THEN '成长期' WHEN user_online <= 36 AND user_online > 18 THEN '成熟期' WHEN user_online <= 60 AND user_online > 36 THEN '异动期' ELSE '离网期' END AS smzq,
+      sum(is_rhtc) AS "粘性",
+      sum(arpu120_user) AS "价值", 
+      sum(is_ywsk) AS "竞抢",
+      sum(is_ts) AS "感知",
+      sum(active_mark) AS "活跃",
+      sum(if(yw_call_opp_counts > 0,1,0)) AS "传播"
+      ${fromWhere}
+      GROUP BY smzq`
 
-    const [lcRes, vRes, rRes] = await Promise.all([
+    // 4) 雷达图（整体占比）
+    const sqlRadarForChart = `SELECT
+      sum(nx_fz) / sum(COUNT_ALL) AS "粘性",
+      sum(jz_fz) / sum(COUNT_ALL) AS "价值",
+      sum(jq_fz) / sum(COUNT_ALL) AS "竞抢",
+      sum(gz_fz) / sum(COUNT_ALL) AS "感知",
+      sum(hy_fz) / sum(COUNT_ALL) AS "活跃",
+      sum(cb_fz) / sum(COUNT_ALL) AS "传播"
+      FROM (
+        SELECT
+          sum(is_rhtc) AS nx_fz,
+          sum(arpu120_user) AS jz_fz,
+          sum(is_ywsk) AS jq_fz,
+          sum(is_ts) AS gz_fz,
+          sum(active_mark) AS hy_fz,
+          sum(case when yw_call_opp_counts > 0 THEN 1 ELSE 0 END) AS cb_fz,
+          COUNT(*) AS COUNT_ALL
+          ${fromWhere}
+      ) t`
+
+    const [lcRes, vRes, rRes, radarChartRes] = await Promise.all([
       request.post('/audience/execute', { sql: sqlLifecycle }),
       request.post('/audience/execute', { sql: sqlValue }),
-      request.post('/audience/execute', { sql: sqlRadar })
+      request.post('/audience/execute', { sql: sqlRadar }),
+      request.post('/audience/execute', { sql: sqlRadarForChart })
     ])
 
     // 组装生命周期
@@ -147,8 +238,7 @@ export const multiAnalysis = createApi(
       low: stageOrder.map((s) => valueMap[s]?.low || 0)
     }
 
-    // 组装雷达
-    const rRow = (rRes.data && rRes.data[0]) || []
+    // 雷达图使用整体占比 SQL 结果
     const radar = {
       indicator: [
         { name: '粘性', max: 100 },
@@ -158,11 +248,14 @@ export const multiAnalysis = createApi(
         { name: '活跃', max: 100 },
         { name: '传播', max: 100 }
       ],
-      value: rRow.map((v) => Number(v) || 0)
+      value: buildRadarValueFromExecuteResult(radarChartRes)
     }
 
-    // 诊断表格：优先使用后端返回 diagnosisTable；未返回时使用图二默认示意数据
-    const diagnosisTable = normalizeDiagnosisTable(rRes?.diagnosisTable)
+    // 诊断表格：优先使用 sqlRadar 的 columns/data；否则再走后端 diagnosisTable 或默认示意数据
+    const diagnosisTable =
+      buildDiagnosisTableFromExecuteResult(rRes) || normalizeDiagnosisTable(rRes?.diagnosisTable)
+
+
 
     return { lifecycle, valueBar, radar, diagnosisTable, sql }
   },

@@ -75,7 +75,7 @@
           />
         </div>
         <div class="mc-box">
-          <textarea v-model="seed.seeds" rows="2" placeholder="请输入种子用户的电话号、user_id，并使用“;”分割。" />
+          <textarea v-model="seed.seeds" rows="2" placeholder="请输入种子用户的电话号、user_id，并使用“,”分割。" />
           <button class="mc-inline-btn" :disabled="seed.compLoading" @click="runSeedCompute">
             {{ seed.compLoading ? '计算中' : '开始计算' }}
           </button>
