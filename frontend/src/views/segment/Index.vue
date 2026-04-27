@@ -30,7 +30,7 @@
             <!-- 查询语句 -->
             <div class="ac-label">查询语句</div>
             <div class="ac-box sql-box">
-              <textarea v-model="sqlText" rows="3" spellcheck="false" />
+              <textarea v-model="sqlText" rows="3" spellcheck="false" placeholder="例如 SELECT city_id, sex_id, count(*) AS cnt FROM user_behavior WHERE arpu > 80 GROUP BY city_id, sex_id LIMIT 20" />
               <button class="orange-btn" :disabled="queryLoading" @click="handleQuery">
                 {{ queryLoading ? '查询中...' : '统计数据' }}
               </button>
@@ -161,8 +161,8 @@ import { useSegmentStore } from '@/stores/segment'
 
 const store = useSegmentStore()
 
-const askText = ref('分析 ARPU>89 的客群')
-const sqlText = ref('SELECT city_id, sex_id, count(*) AS cnt FROM user_behavior WHERE arpu > 80 GROUP BY city_id, sex_id LIMIT 20')
+const askText = ref('')
+const sqlText = ref('')
 const askLoading = ref(false)
 const queryLoading = ref(false)
 const analysisLoading = ref(false)
@@ -348,7 +348,7 @@ onMounted(async () => {
     const list = await getSegmentList()
     store.setList(list)
   } catch (e) {}
-  handleQuery()
+  //handleQuery()
   handleMultiAnalysis()
 })
 </script>

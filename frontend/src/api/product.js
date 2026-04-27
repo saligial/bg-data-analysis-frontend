@@ -49,7 +49,7 @@ async function loadProducts() {
   return _productCache
 }
 
-// 3.3 前端搜索推荐产品 POST /products/search
+// 3.3 前端搜索推荐产品 GET /products/search
 //   参数：keyword（关键词，至少 2 个字符，少于 2 字符返回空列表）
 //         limit（最大返回条数，默认 20）
 //   响应：{ products: [...] }
@@ -57,7 +57,7 @@ async function loadProducts() {
 // 为了兼容初始化调用 searchProducts({ keyword: '' })，约定：
 //   - keyword 为空：走 GET /products 返回全量产品列表
 //   - keyword 有内容但长度 < 2：直接返回空数组（符合后端约束，避免无效请求）
-//   - keyword 长度 >= 2：走 POST /products/search 真正搜索
+//   - keyword 长度 >= 2：走 GET /products/search 真正搜索
 export const searchProducts = createApi(
   async ({ keyword, limit = 20 } = {}) => {
     const kw = (keyword || '').trim()
@@ -67,7 +67,9 @@ export const searchProducts = createApi(
     if (kw.length < 2) {
       return []
     }
-    const data = await request.post('/products/search', { keyword: kw, limit })
+    const data = await request.get('/products/search', {
+      params: { keyword: kw, limit }
+    })
     return (data.products || []).map(mapProduct)
   },
   (payload) => mockProduct.search(payload)

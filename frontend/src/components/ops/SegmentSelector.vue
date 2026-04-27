@@ -13,7 +13,7 @@
       <div class="step-badge">{{ stepLabel }}</div>
       <div class="total">
         <span class="total-label">当前圈选目标客户规模</span>
-        <span class="total-value"><CountNumber :end="totalCount" /> <span class="unit">条</span></span>
+        <span class="total-value"><CountNumber :end="totalCount" /> <span class="unit">人</span></span>
       </div>
     </div>
     <div class="sec-desc">多种方式圈选运营目标客群客户。</div>

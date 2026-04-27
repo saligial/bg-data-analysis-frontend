@@ -49,14 +49,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import AssistantBar from '@/components/ops/AssistantBar.vue'
 import ProductSelector from '@/components/ops/ProductSelector.vue'
 import SegmentSelector from '@/components/ops/SegmentSelector.vue'
 import GenerateBar from '@/components/ops/GenerateBar.vue'
 import StrategyArea from '@/components/ops/StrategyArea.vue'
-import { recommendProducts, searchProducts } from '@/api/product'
+import { recommendProducts } from '@/api/product'
 import { generateStrategy, executeStrategy, predictStrategy } from '@/api/strategy'
 import { useSegmentStore } from '@/stores/segment'
 
@@ -154,12 +154,6 @@ async function handleGenerate(text) {
   }
 }
 
-onMounted(async () => {
-  try {
-    const res = await searchProducts({ keyword: '' })
-    products.value = res
-  } catch (e) {}
-})
 </script>
 
 <style lang="scss" scoped>
