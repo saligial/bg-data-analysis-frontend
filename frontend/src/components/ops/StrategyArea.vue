@@ -143,7 +143,7 @@
               class="week-bar"
               :class="{ active: bestWeekdays.includes(idx + 1) }"
             >
-              <div class="bar-fill" :style="{ height: `${bestWeekdays.includes(idx + 1) ? 58 : 26}px` }"></div>
+              <div class="bar-fill" :style="{ height: bestWeekdays.includes(idx + 1) ? '70%' : '30%' }"></div>
               <div class="bar-label">{{ w }}</div>
             </div>
           </div>
@@ -519,6 +519,11 @@ async function handlePublish() {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr);
   gap: 16px;
   margin-bottom: 16px;
+  align-items: stretch;
+}
+.sc-dual-grid > .sc-card {
+  display: flex;
+  flex-direction: column;
 }
 .sub-title {
   font-size: 13px;
@@ -741,12 +746,12 @@ async function handlePublish() {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 8px;
-  height: 116px;
-  align-items: end;
+  flex: 1;
+  min-height: 116px;
+  align-items: stretch;
   background: #f5f7fb;
   padding: 8px;
   border-radius: 8px;
- // flex: 1; /* 👈 这个会自动把下面空白全部撑满 */
 }
 .week-bar {
   display: flex;
