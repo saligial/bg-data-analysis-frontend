@@ -89,8 +89,7 @@
             <div v-for="(lc, idx) in analysis.lifecycle" :key="lc.key" class="lc-card" :class="`lc-card-${idx}`">
               <div class="lc-head">{{ lc.label }}</div>
               <div class="lc-value">
-                <CountNumber :end="lc.value" :decimals="2" />
-                <span class="lc-unit">W</span>
+                <CountNumber :end="lc.value" />
               </div>
               <div class="lc-desc">口径：{{ lc.desc }}</div>
             </div>

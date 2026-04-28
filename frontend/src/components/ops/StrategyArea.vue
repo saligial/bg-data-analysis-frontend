@@ -746,7 +746,7 @@ async function handlePublish() {
   background: #f5f7fb;
   padding: 8px;
   border-radius: 8px;
-  flex: 1; /* 👈 这个会自动把下面空白全部撑满 */
+ // flex: 1; /* 👈 这个会自动把下面空白全部撑满 */
 }
 .week-bar {
   display: flex;

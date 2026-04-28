@@ -216,7 +216,7 @@ export const multiAnalysis = createApi(
 
     // 组装生命周期
     const lcRow = (lcRes.data && lcRes.data[0]) || []
-    const toWan = (n) => (typeof n === 'number' ? +(n / 10000).toFixed(2) : 0)
+    const toWan = (n) => (typeof n === 'number' ? n : 0)
     const lifecycle = [
       { key: 'inflow', label: '入网期', desc: '在网时长<6个月', value: toWan(lcRow[0]) },
       { key: 'growth', label: '成长期', desc: '在网时长<18个月', value: toWan(lcRow[1]) },
